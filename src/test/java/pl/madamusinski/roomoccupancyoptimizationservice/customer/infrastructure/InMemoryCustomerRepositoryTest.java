@@ -67,10 +67,6 @@ class InMemoryCustomerRepositoryTest {
         final var customerTwo = createCustomer("2", BigDecimal.valueOf(242.40), CurrencyType.EUR);
         underTest = preExistingCustomerInMemoryRepositoryFixture(customerOne, customerTwo);
 
-//        // when
-//        underTest.save(customerOne);
-//        underTest.save(customerTwo);
-
         // expect
         assertThat(underTest.findAll()).containsExactlyInAnyOrder(customerOne, customerTwo);
     }
