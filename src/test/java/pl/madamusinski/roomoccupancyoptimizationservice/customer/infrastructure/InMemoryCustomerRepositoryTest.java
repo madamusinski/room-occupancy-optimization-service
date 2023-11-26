@@ -2,7 +2,6 @@ package pl.madamusinski.roomoccupancyoptimizationservice.customer.infrastructure
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import pl.madamusinski.roomoccupancyoptimizationservice.customer.domain.Currency;
 import pl.madamusinski.roomoccupancyoptimizationservice.customer.domain.CurrencyType;
 import pl.madamusinski.roomoccupancyoptimizationservice.customer.domain.Customer;
 
@@ -13,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static pl.madamusinski.roomoccupancyoptimizationservice.customer.CustomerUtility.createCustomer;
 import static pl.madamusinski.roomoccupancyoptimizationservice.customer.CustomerUtility.createNewCustomer;
-import static pl.madamusinski.roomoccupancyoptimizationservice.customer.infrastructure.CustomerRepositoryFixtures.*;
+import static pl.madamusinski.roomoccupancyoptimizationservice.customer.infrastructure.CustomerRepositoryFixtures.preExistingCustomerInMemoryRepositoryFixture;
 
 class InMemoryCustomerRepositoryTest {
 
@@ -38,7 +37,7 @@ class InMemoryCustomerRepositoryTest {
     }
 
     @Test
-    void givenUpdatedCustomer_whenCustomerInDBStorageHasSameId_shouldUpdateTheExistingCustomer() {
+    void givenUpdatedCustomer_whenCustomerInStorageHasSameId_shouldUpdateTheExistingCustomer() {
         // given
         final var newCustomer = createCustomer("1", BigDecimal.valueOf(100), CurrencyType.EUR);
         underTest = preExistingCustomerInMemoryRepositoryFixture(newCustomer);
@@ -72,17 +71,39 @@ class InMemoryCustomerRepositoryTest {
     }
 
     @Test
-    void givenDbStorageWithTwoCustomersSaved_whenFindingAllCustomers_shouldReturnTheseExactTwoCustomersFromStorage() {
+    void givenStorageWithTwoCustomersSaved_whenFindingAllCustomers_shouldReturnTheseExactTwoCustomersFromStorage() {
         // given
         final var customerOne = createCustomer("1", BigDecimal.valueOf(100), CurrencyType.EUR);
         final var customerTwo = createCustomer("2", BigDecimal.valueOf(242.40), CurrencyType.EUR);
         underTest = preExistingCustomerInMemoryRepositoryFixture(customerOne, customerTwo);
 
         // when
-        final var searchResult = underTest.findAll();
+        final var foundCustomers = underTest.findAll();
 
         // then
         assertThat(underTest.findAll()).hasSize(2);
-        assertThat(searchResult).containsExactlyInAnyOrder(customerOne, customerTwo);
+        assertThat(foundCustomers).containsExactlyInAnyOrder(customerOne, customerTwo);
+    }
+
+    @Test
+    void shouldReturnOptionalWithCustomer_whenCustomerInStorageHasSameId() {
+        // given
+        final var FIXTURE_CUSTOMER_ID = "1";
+        final var customerOne = createCustomer(FIXTURE_CUSTOMER_ID, BigDecimal.valueOf(100), CurrencyType.EUR);
+        underTest = preExistingCustomerInMemoryRepositoryFixture(customerOne);
+
+        // when
+        final var possibleCustomer = underTest.findOneById(FIXTURE_CUSTOMER_ID);
+        assertThat(possibleCustomer).isPresent().get().isEqualTo(customerOne);
+    }
+
+    @Test
+    void givenCustomerId_whenDoesNotExistInStorage_shouldReturnEmptyOptional() {
+        // given
+        final var FIXTURE_CUSTOMER_ID = "1";
+
+        // when
+        final var possibleCustomer = underTest.findOneById(FIXTURE_CUSTOMER_ID);
+        assertThat(possibleCustomer).isNotPresent();
     }
 }
