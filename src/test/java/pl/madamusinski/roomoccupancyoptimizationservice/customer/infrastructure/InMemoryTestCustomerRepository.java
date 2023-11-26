@@ -37,6 +37,6 @@ public class InMemoryTestCustomerRepository implements CustomerRepository<Custom
 
     @Override
     public Optional<Customer> findOneById(String id) {
-        return Optional.empty();
+        return Optional.ofNullable(customerStorage.get(id));
     }
 }
