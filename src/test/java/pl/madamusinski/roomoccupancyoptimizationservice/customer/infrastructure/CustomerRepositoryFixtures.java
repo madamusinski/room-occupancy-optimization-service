@@ -10,7 +10,7 @@ import java.util.HashMap;
 @UtilityClass
 public class CustomerRepositoryFixtures {
 
-    public InMemoryTestCustomerRepository preExistingCustomerInMemoryRepositoryFixture(Customer... customers) {
+    public static InMemoryTestCustomerRepository preExistingCustomerInMemoryRepositoryFixture(Customer... customers) {
         var customerStorage = new HashMap<String, Customer>();
         Arrays.stream(customers).peek(c -> Assert.notNull(c.getId(), "Customer id cannot be null")).forEach(c -> customerStorage.compute(c.getId(), (k, v) -> c));
         return new InMemoryTestCustomerRepository(customerStorage);
