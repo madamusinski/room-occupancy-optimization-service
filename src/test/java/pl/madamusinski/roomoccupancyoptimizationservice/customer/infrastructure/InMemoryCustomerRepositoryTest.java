@@ -2,11 +2,15 @@ package pl.madamusinski.roomoccupancyoptimizationservice.customer.infrastructure
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import pl.madamusinski.roomoccupancyoptimizationservice.customer.domain.CurrencyType;
 import pl.madamusinski.roomoccupancyoptimizationservice.customer.domain.Customer;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -106,4 +110,98 @@ class InMemoryCustomerRepositoryTest {
         final var possibleCustomer = underTest.findOneById(FIXTURE_CUSTOMER_ID);
         assertThat(possibleCustomer).isNotPresent();
     }
+
+    static Stream<Arguments> testCases() {
+        return Stream.of(
+                Arguments.of(
+                        "given both min and max bid range",
+                        new Customer[]{
+                                createCustomer("1", BigDecimal.valueOf(100), CurrencyType.EUR),
+                                createCustomer("2", BigDecimal.valueOf(20), CurrencyType.EUR),
+                                createCustomer("3", BigDecimal.valueOf(99.99), CurrencyType.EUR),
+                                createCustomer("4", BigDecimal.valueOf(23), CurrencyType.EUR),
+                                createCustomer("5", BigDecimal.valueOf(100.01), CurrencyType.EUR),
+                                createCustomer("6", BigDecimal.valueOf(249), CurrencyType.EUR)
+                        },
+                        BigDecimal.valueOf(23),
+                        BigDecimal.valueOf(100),
+                        new Customer[]{
+                                createCustomer("1", BigDecimal.valueOf(100), CurrencyType.EUR),
+                                createCustomer("3", BigDecimal.valueOf(99.99), CurrencyType.EUR),
+                                createCustomer("4", BigDecimal.valueOf(23), CurrencyType.EUR),
+                        }
+                ),
+                Arguments.of(
+                        "given only max bid range should use default min bid range",
+                        new Customer[]{
+                                createCustomer("1", BigDecimal.valueOf(100), CurrencyType.EUR),
+                                createCustomer("2", BigDecimal.valueOf(20), CurrencyType.EUR),
+                                createCustomer("3", BigDecimal.valueOf(99.99), CurrencyType.EUR),
+                                createCustomer("4", BigDecimal.valueOf(23), CurrencyType.EUR),
+                                createCustomer("5", BigDecimal.valueOf(100.01), CurrencyType.EUR),
+                                createCustomer("6", BigDecimal.valueOf(249), CurrencyType.EUR)
+                        },
+                        null,
+                        BigDecimal.valueOf(100),
+                        new Customer[]{
+                                createCustomer("1", BigDecimal.valueOf(100), CurrencyType.EUR),
+                                createCustomer("2", BigDecimal.valueOf(20), CurrencyType.EUR),
+                                createCustomer("3", BigDecimal.valueOf(99.99), CurrencyType.EUR),
+                                createCustomer("4", BigDecimal.valueOf(23), CurrencyType.EUR),
+                        }
+                ),
+                Arguments.of(
+                        "given only min bid range",
+                        new Customer[]{
+                                createCustomer("1", BigDecimal.valueOf(100), CurrencyType.EUR),
+                                createCustomer("2", BigDecimal.valueOf(20), CurrencyType.EUR),
+                                createCustomer("3", BigDecimal.valueOf(99.99), CurrencyType.EUR),
+                                createCustomer("4", BigDecimal.valueOf(23), CurrencyType.EUR),
+                                createCustomer("5", BigDecimal.valueOf(100.01), CurrencyType.EUR),
+                                createCustomer("6", BigDecimal.valueOf(249), CurrencyType.EUR)
+                        },
+                        BigDecimal.valueOf(100.01),
+                        null,
+                        new Customer[]{
+                                createCustomer("5", BigDecimal.valueOf(100.01), CurrencyType.EUR),
+                                createCustomer("6", BigDecimal.valueOf(249), CurrencyType.EUR)
+                        }
+                ),
+                Arguments.of(
+                        "given no bid range",
+                        new Customer[]{
+                                createCustomer("1", BigDecimal.valueOf(100), CurrencyType.EUR),
+                                createCustomer("2", BigDecimal.valueOf(20), CurrencyType.EUR),
+                                createCustomer("3", BigDecimal.valueOf(99.99), CurrencyType.EUR),
+                                createCustomer("4", BigDecimal.valueOf(23), CurrencyType.EUR),
+                                createCustomer("5", BigDecimal.valueOf(100.01), CurrencyType.EUR),
+                                createCustomer("6", BigDecimal.valueOf(249), CurrencyType.EUR)
+                        },
+                        null,
+                        null,
+                        new Customer[]{
+                                createCustomer("1", BigDecimal.valueOf(100), CurrencyType.EUR),
+                                createCustomer("2", BigDecimal.valueOf(20), CurrencyType.EUR),
+                                createCustomer("3", BigDecimal.valueOf(99.99), CurrencyType.EUR),
+                                createCustomer("4", BigDecimal.valueOf(23), CurrencyType.EUR),
+                                createCustomer("5", BigDecimal.valueOf(100.01), CurrencyType.EUR),
+                                createCustomer("6", BigDecimal.valueOf(249), CurrencyType.EUR)
+                        }
+                )
+        );
+    }
+
+    @ParameterizedTest(name = "{index}: {0}")
+    @MethodSource("testCases")
+    void searchCustomersByBidRange(String caseDescription, Customer[] customers, BigDecimal minBigRange, BigDecimal maxBidRange, Customer[] expected) {
+        // given
+        underTest = preExistingCustomerInMemoryRepositoryFixture(customers);
+
+        // when
+        final var foundCustomers = underTest.findAllByBidRange(minBigRange, maxBidRange);
+
+        // then
+        assertThat(foundCustomers).containsExactlyInAnyOrder(expected);
+    }
+
 }
