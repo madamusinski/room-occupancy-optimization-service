@@ -2,18 +2,18 @@ package pl.madamusinski.roomoccupancyoptimizationservice.customer.infrastructure
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.Assert;
+import pl.madamusinski.roomoccupancyoptimizationservice.customer.config.CustomerProperties;
 import pl.madamusinski.roomoccupancyoptimizationservice.customer.domain.Customer;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Predicate;
 
 
 @RequiredArgsConstructor
 public class InMemoryTestCustomerRepository implements CustomerRepository<Customer> {
 
+    private final CustomerProperties properties;
     private final HashMap<String, Customer> customerStorage;
 
     @Override
@@ -32,7 +32,19 @@ public class InMemoryTestCustomerRepository implements CustomerRepository<Custom
 
     @Override
     public List<Customer> findAllByBidRange(BigDecimal lowestBidAt, BigDecimal highestBidAt) {
-        return null;
+        Predicate<Customer> customerPredicate = c -> c.getBid().getValue().compareTo(lowestBidAt) >= 0 && c.getBid().getValue().compareTo(highestBidAt) <= 0;
+        if(Objects.isNull(lowestBidAt)) {
+            customerPredicate = c -> c.getBid().getValue().compareTo(properties.getMinBidAt()) >= 0 && c.getBid().getValue().compareTo(highestBidAt) <= 0;
+        }
+        if(Objects.isNull(highestBidAt)) {
+            customerPredicate = c -> c.getBid().getValue().compareTo(lowestBidAt) >= 0;
+        }
+        if(Objects.isNull(lowestBidAt) && Objects.isNull(highestBidAt)) {
+            return findAll();
+        }
+        return customerStorage.values().stream()
+                .filter(customerPredicate)
+                .toList();
     }
 
     @Override
