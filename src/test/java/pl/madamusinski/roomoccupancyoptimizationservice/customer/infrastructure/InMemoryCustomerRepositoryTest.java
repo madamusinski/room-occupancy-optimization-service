@@ -6,7 +6,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import pl.madamusinski.roomoccupancyoptimizationservice.customer.config.CustomerProperties;
 import pl.madamusinski.roomoccupancyoptimizationservice.customer.domain.CurrencyType;
@@ -28,12 +27,14 @@ class InMemoryCustomerRepositoryTest {
     private CustomerRepository<Customer> underTest;
     @Mock
     private CustomerProperties properties;
+    private BidRangePredicateFactory factory;
 
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        this.underTest = new InMemoryTestCustomerRepository(properties, new HashMap<>());
+        this.factory = new BidRangePredicateFactory(properties);
+        this.underTest = new InMemoryTestCustomerRepository(factory, new HashMap<>());
         when(properties.getMinBidAt()).thenReturn(BigDecimal.valueOf(1.0));
     }
 
@@ -53,7 +54,7 @@ class InMemoryCustomerRepositoryTest {
     void givenUpdatedCustomer_whenCustomerInStorageHasSameId_shouldUpdateTheExistingCustomer() {
         // given
         final var newCustomer = createCustomer("1", BigDecimal.valueOf(100), CurrencyType.EUR);
-        underTest = preExistingCustomerInMemoryRepositoryFixture(properties, newCustomer);
+        underTest = preExistingCustomerInMemoryRepositoryFixture(factory, newCustomer);
         final var modifiedCustomer = createCustomer("1", BigDecimal.valueOf(242.22), CurrencyType.EUR);
 
         // when
@@ -77,7 +78,7 @@ class InMemoryCustomerRepositoryTest {
         // given
         final var customerOne = createCustomer("1", BigDecimal.valueOf(100), CurrencyType.EUR);
         final var customerTwo = createCustomer("2", BigDecimal.valueOf(242.40), CurrencyType.EUR);
-        underTest = preExistingCustomerInMemoryRepositoryFixture(properties, customerOne, customerTwo);
+        underTest = preExistingCustomerInMemoryRepositoryFixture(factory, customerOne, customerTwo);
 
         // expect
         assertThat(underTest.findAll()).containsExactlyInAnyOrder(customerOne, customerTwo);
@@ -88,7 +89,7 @@ class InMemoryCustomerRepositoryTest {
         // given
         final var customerOne = createCustomer("1", BigDecimal.valueOf(100), CurrencyType.EUR);
         final var customerTwo = createCustomer("2", BigDecimal.valueOf(242.40), CurrencyType.EUR);
-        underTest = preExistingCustomerInMemoryRepositoryFixture(properties, customerOne, customerTwo);
+        underTest = preExistingCustomerInMemoryRepositoryFixture(factory, customerOne, customerTwo);
 
         // when
         final var foundCustomers = underTest.findAll();
@@ -103,7 +104,7 @@ class InMemoryCustomerRepositoryTest {
         // given
         final var FIXTURE_CUSTOMER_ID = "1";
         final var customerOne = createCustomer(FIXTURE_CUSTOMER_ID, BigDecimal.valueOf(100), CurrencyType.EUR);
-        underTest = preExistingCustomerInMemoryRepositoryFixture(properties, customerOne);
+        underTest = preExistingCustomerInMemoryRepositoryFixture(factory, customerOne);
 
         // when
         final var possibleCustomer = underTest.findOneById(FIXTURE_CUSTOMER_ID);
@@ -204,7 +205,7 @@ class InMemoryCustomerRepositoryTest {
     @MethodSource("testCases")
     void searchCustomersByBidRange(String caseDescription, Customer[] customers, BigDecimal minBigRange, BigDecimal maxBidRange, Customer[] expected) {
         // given
-        underTest = preExistingCustomerInMemoryRepositoryFixture(properties, customers);
+        underTest = preExistingCustomerInMemoryRepositoryFixture(factory, customers);
 
         // when
         final var foundCustomers = underTest.findAllByBidRange(minBigRange, maxBidRange);
